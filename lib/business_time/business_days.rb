@@ -38,7 +38,7 @@ module BusinessTime
 
     def calculate_after(time, days, options={})
       if (time.is_a?(Time) || time.is_a?(DateTime)) && !time.workday?(options)
-        time = Time.beginning_of_workday(time)
+        time = time.beginning_of_workday
       end
       while days > 0 || !time.workday?(options)
         days -= 1 if time.workday?(options)
@@ -47,14 +47,14 @@ module BusinessTime
       # If we have a Time or DateTime object, we can roll_forward to the
       #   beginning of the next business day
       if time.is_a?(Time) || time.is_a?(DateTime)
-        time = Time.roll_forward(time, options) unless time.during_business_hours?
+        time = time.roll_forward(options) unless time.during_business_hours?
       end
       time
     end
 
     def calculate_before(time, days, options={})
       if (time.is_a?(Time) || time.is_a?(DateTime)) && !time.workday?(options)
-        time = Time.beginning_of_workday(time)
+        time = time.beginning_of_workday
       end
       while days > 0 || !time.workday?(options)
         days -= 1 if time.workday?(options)
@@ -64,7 +64,7 @@ module BusinessTime
       #   beginning of the previous business day
       if time.is_a?(Time) || time.is_a?(DateTime)
         unless time.during_business_hours?
-          time = Time.beginning_of_workday(Time.roll_backward(time, options))
+          time = time.roll_backward(options).beginning_of_workday
         end
       end
       time

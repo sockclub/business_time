@@ -31,13 +31,13 @@ describe "TimeWithZone extensions" do
     it "know the beginning of the day for an instance" do
       first = Time.zone.parse("August 17th, 2010, 11:50 am")
       expecting = Time.zone.parse("August 17th, 2010, 9:00 am")
-      assert_equal expecting, Time.beginning_of_workday(first)
+      assert_equal expecting, first.beginning_of_workday
     end
 
     it "know the end of the day for an instance" do
       first = Time.zone.parse("August 17th, 2010, 11:50 am")
       expecting = Time.zone.parse("August 17th, 2010, 5:00 pm")
-      assert_equal expecting, Time.end_of_workday(first)
+      assert_equal expecting, first.end_of_workday
     end
 
     it "know a holiday passed as an option is not a workday" do
@@ -79,13 +79,13 @@ describe "TimeWithZone extensions" do
     it "know the beginning of the day for an instance" do
       first = Time.zone.parse("August 17th, 2010, 11:50 am")
       expecting = Time.zone.parse("August 17th, 2010, 9:00 am")
-      assert_equal expecting, Time.beginning_of_workday(first)
+      assert_equal expecting, first.beginning_of_workday
     end
 
     it "know the end of the day for an instance" do
       first = Time.zone.parse("August 17th, 2010, 11:50 am")
       expecting = Time.zone.parse("August 17th, 2010, 5:00 pm")
-      assert_equal expecting, Time.end_of_workday(first)
+      assert_equal expecting, first.end_of_workday
     end
 
     it "know a holiday passed as an option is not a workday" do
