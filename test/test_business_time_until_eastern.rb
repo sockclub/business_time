@@ -16,13 +16,13 @@ describe "#business_time_until" do
     it "should respect the time zone for TimeWithZone" do
       three_o_clock = Time.zone.parse("2014-02-17 15:00:00")
       nine_o_clock = Time.zone.parse("2014-02-17 09:00:00")
-      assert_equal nine_o_clock, Time.beginning_of_workday(three_o_clock)
+      assert_equal nine_o_clock, three_o_clock.beginning_of_workday
     end
 
     it "should respect the time zone for Time" do
       three_o_clock = Time.parse("2014-02-17 15:00:00")
       nine_o_clock = Time.parse("2014-02-17 09:00:00")
-      assert_equal nine_o_clock, Time.beginning_of_workday(three_o_clock)
+      assert_equal nine_o_clock, three_o_clock.beginning_of_workday
     end
   end
 end

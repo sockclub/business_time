@@ -27,13 +27,13 @@ describe "time extensions" do
   it "know the beginning of the day for an instance" do
     first = Time.parse("August 17th, 2010, 11:50 am")
     expecting = Time.parse("August 17th, 2010, 9:00 am")
-    assert_equal expecting, Time.beginning_of_workday(first)
+    assert_equal expecting, first.beginning_of_workday
   end
 
   it "know the end of the day for an instance" do
     first = Time.parse("August 17th, 2010, 11:50 am")
     expecting = Time.parse("August 17th, 2010, 5:00 pm")
-    assert_equal expecting, Time.end_of_workday(first)
+    assert_equal expecting, first.end_of_workday
   end
 
   # ===================
@@ -99,26 +99,26 @@ describe "time extensions" do
     time = Time.parse("11pm UTC, Wednesday 9th May, 2012")
     workday_end = BusinessTime::Config.end_of_workday
     expected_time = Time.parse("#{workday_end} UTC, Wednesday 9th May, 2012")
-    assert_equal Time.roll_backward(time), expected_time
+    assert_equal time.roll_backward, expected_time
   end
 
   it "roll to the end of the previous day when before hours on a workday" do
     time = Time.parse("04am UTC, Wednesday 9th May, 2012")
     workday_end = BusinessTime::Config.end_of_workday
     expected_time = Time.parse("#{workday_end} UTC, Tuesday 8th May, 2012")
-    assert_equal Time.roll_backward(time), expected_time
+    assert_equal time.roll_backward, expected_time
   end
 
   it "rolls to the end of the previous workday on non-working days" do
     time = Time.parse("12pm UTC, Sunday 6th May, 2012")
     workday_end = BusinessTime::Config.end_of_workday
     expected_time = Time.parse("#{workday_end} UTC, Friday 4th May, 2012")
-    assert_equal Time.roll_backward(time), expected_time
+    assert_equal time.roll_backward, expected_time
   end
 
   it "returns the given time during working hours" do
     time = Time.parse("12pm, Tuesday 8th May, 2012")
-    assert_equal Time.roll_backward(time), time
+    assert_equal time.roll_backward, time
   end
 
   it "respects work hours" do
@@ -128,7 +128,7 @@ describe "time extensions" do
       :wed=>["9:00","12:00"],
       :sat=>["13:00","14:00"]
     }
-    assert_equal wednesday, Time.roll_backward(saturday)
+    assert_equal wednesday, saturday.roll_backward
   end
 
   it "know a holiday passed as a Date option is not a workday" do
