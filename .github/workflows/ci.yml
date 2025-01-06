@@ -10,6 +10,7 @@ jobs:
         bundler: [default]
         gemfile:
           - active_support_7
+          - active_support_8
         include:
           - { ruby: "2.3", gemfile: "active_support_3", bundler: "1" }
           - { ruby: "2.4", gemfile: "active_support_4", bundler: "1" }
