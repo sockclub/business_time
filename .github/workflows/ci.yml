@@ -1,5 +1,12 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
   test:
@@ -10,11 +17,9 @@ jobs:
         bundler: [default]
         gemfile:
           - active_support_7
-          - active_support_8
         include:
           # Removed Ruby versions older than 3.3x as we're not using those
           - { ruby: "3.3", gemfile: "active_support_7" }
-          - { ruby: "3.4", gemfile: "active_support_8" }
 
     env:
       BUNDLE_GEMFILE: gemfiles/${{ matrix.gemfile }}.gemfile

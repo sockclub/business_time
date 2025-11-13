@@ -364,6 +364,5 @@ describe "business hours" do
         -5.business_hours < -5.business_days
       end
     end
-
   end
 end

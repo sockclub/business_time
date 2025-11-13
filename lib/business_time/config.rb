@@ -111,7 +111,7 @@ module BusinessTime
       # Altered from gem definition!
       # - introduced work_hours_for(day)
       def end_of_workday(day=nil)
-        work_hours_for(day).first
+        work_hours_for(day).last
       end
 
       # You can set this yourself, either by the load method below, or
@@ -121,7 +121,7 @@ module BusinessTime
       # Altered from gem definition!
       # - introduced work_hours_for(day)
       def beginning_of_workday(day=nil)
-        work_hours_for(day).last
+        work_hours_for(day).first
       end
 
 
@@ -136,13 +136,15 @@ module BusinessTime
         # Override with day-specific work hours if given a day
         if day
           wday = work_hours[int_to_wday(day.wday)]
-          eod, bod = wday if wday
+          bod, eod = wday if wday
         end
 
         # Handle 00:00 closing times
-        # eod == ParsedTime.new(0, 0) ? ParsedTime.new(23, 59, 59) : eod
+        if eod == ParsedTime.new(0, 0)
+          eod = ParsedTime.new(23, 59, 59)
+        end
 
-        return [eod, bod]
+        return [bod, eod]
       end
 
       # You can set this yourself, either by the load method below, or

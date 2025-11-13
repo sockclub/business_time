@@ -64,7 +64,7 @@ module BusinessTime
     end
 
     def calculate_before(time, hours, options={})
-      before_time = Time.roll_backward(time)
+      before_time = Time.roll_backward(time, options)
       # Step through the hours, skipping over non-business hours
       hours.times do
         bod = Time.beginning_of_workday(before_time)
