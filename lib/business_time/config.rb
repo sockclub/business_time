@@ -129,15 +129,18 @@ module BusinessTime
       # Return [ beginning_of_workday, end_of_workday ] for the given day.
       # Introduced for use in TimeExtensions to handle overnight work hours.
       def work_hours_for(day)
+        # Default return non-day-specific work hours
         eod = config[:end_of_workday]
+        bod = config[:beginning_of_workday]
+
+        # Override with day-specific work hours if given a day
         if day
           wday = work_hours[int_to_wday(day.wday)]
-          eod = wday.last if wday
-          bod = wday.first if wday
+          eod, bod = wday if wday
         end
 
         # Handle 00:00 closing times
-        eod == ParsedTime.new(0, 0) ? ParsedTime.new(23, 59, 59) : eod
+        # eod == ParsedTime.new(0, 0) ? ParsedTime.new(23, 59, 59) : eod
 
         return [eod, bod]
       end
