@@ -16,19 +16,39 @@ module BusinessTime
     end
 
     module ClassMethods
+      def work_day_boundaries(day)
+        bod, eod = BusinessTime::Config.work_hours_for(day)
+
+        # Standard hours where eod is after bod
+        if eod >= bod
+          return [
+            change_business_time(day, bod.hour, bod.min, bod.sec),
+            change_business_time(day, eod.hour, eod.min, eod.sec)
+          ]
+        end
+
+        # Handle overnight work hours
+        if ParsedTime.parse(day) > eod
+          [
+            change_business_time(day, bod.hour, bod.min, bod.sec),
+            change_business_time(day + 1.day, eod.hour, eod.min, eod.sec)
+          ]
+        else
+          [
+            change_business_time(day - 1.day, bod.hour, bod.min, bod.sec),
+            change_business_time(day, eod.hour, eod.min, eod.sec)
+          ]
+        end
+      end
+
+
       # Gives the time at the end of the workday, assuming that this time falls on a
       # workday.
       # Note: It pretends that this day is a workday whether or not it really is a
       # workday.
       # Altered from gem definition! Handles overnight work hours
       def end_of_workday(day)
-        bod, eod = BusinessTime::Config.work_hours_for(day)
-
-        if eod < bod # Handle overnight work hours
-          day = day + 1.day
-        end
-
-        change_business_time(day, eod.hour, eod.min, eod.sec)
+        work_day_boundaries(day).last
       end
 
       # Gives the time at the beginning of the workday, assuming that this time
@@ -37,13 +57,7 @@ module BusinessTime
       # workday.
       # Altered from gem definition! Handles overnight work hours
       def beginning_of_workday(day)
-        bod, eod = BusinessTime::Config.work_hours_for(day)
-
-        if eod < bod # Handle overnight work hours
-          day = day - 1.day
-        end
-
-        change_business_time(day, bod.hour, bod.min, bod.sec)
+        work_day_boundaries(day).first
       end
 
       # True if this time is on a workday (between 00:00:00 and 23:59:59), even if

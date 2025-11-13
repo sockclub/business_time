@@ -196,6 +196,28 @@ describe "business hours" do
         assert_equal two_after_open, 4.business_hours.after(two_before_close)
         assert_equal two_before_close, 4.business_hours.before(two_after_open)
       end
+
+
+      it "respects hours going over midnight" do
+        before_midnight = Time.parse("2025-11-12 23:00")
+        after_midnight = Time.parse("2025-11-13 01:00")
+
+        BusinessTime::Config.work_hours = {
+          mon: ["17:00", "02:00"],
+          tue: ["17:00", "02:00"],
+          wed: ["17:00", "02:00"],
+          thu: ["17:00", "02:00"],
+          fri: ["17:00", "02:00"],
+        }
+
+        assert_equal after_midnight, 2.business_hours.after(before_midnight)
+        assert_equal before_midnight, 2.business_hours.before(after_midnight)
+
+        next_shift = Time.parse("2025-11-13 18:00")
+
+        assert_equal next_shift, 2.business_hours.after(after_midnight)
+        assert_equal after_midnight, 2.business_hours.before(next_shift)
+      end
     end
 
     describe "when adding/subtracting negative number of business hours" do
@@ -363,6 +385,27 @@ describe "business hours" do
       assert_raises ArgumentError do
         -5.business_hours < -5.business_days
       end
+    end
+
+    it "respects hours going over midnight" do
+      before_midnight = Time.parse("2025-11-12 23:00")
+      after_midnight = Time.parse("2025-11-13 01:00")
+
+      BusinessTime::Config.work_hours = {
+        mon: ["17:00", "02:00"],
+        tue: ["17:00", "02:00"],
+        wed: ["17:00", "02:00"],
+        thu: ["17:00", "02:00"],
+        fri: ["17:00", "02:00"],
+      }
+
+      assert_equal before_midnight, -2.business_hours.after(after_midnight)
+      assert_equal after_midnight, -2.business_hours.before(before_midnight)
+
+      next_shift = Time.parse("2025-11-13 18:00")
+
+      assert_equal after_midnight, -2.business_hours.after(next_shift)
+      assert_equal next_shift, -2.business_hours.before(after_midnight)
     end
   end
 end
