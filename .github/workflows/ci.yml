@@ -6,22 +6,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby: ["3.2", "3.3", "3.4"]
+        ruby: ["3.3", "3.4"]
         bundler: [default]
         gemfile:
           - active_support_7
           - active_support_8
         include:
-          - { ruby: "2.3", gemfile: "active_support_3", bundler: "1" }
-          - { ruby: "2.4", gemfile: "active_support_4", bundler: "1" }
-          - { ruby: "2.5", gemfile: "active_support_4", bundler: "1" }
-          - { ruby: "2.5", gemfile: "active_support_5", bundler: "1" }
-          - { ruby: "2.6", gemfile: "active_support_5", bundler: "1" }
-          - { ruby: "2.6", gemfile: "active_support_6", bundler: "1" }
-          - { ruby: "2.7", gemfile: "active_support_6" }
-          - { ruby: "2.7", gemfile: "active_support_7" }
-          - { ruby: "3.0", gemfile: "active_support_7" }
-          - { ruby: "3.1", gemfile: "active_support_7" }
+          # Removed Ruby versions older than 3.3x as we're not using those
+          - { ruby: "3.3", gemfile: "active_support_7" }
+          - { ruby: "3.4", gemfile: "active_support_8" }
 
     env:
       BUNDLE_GEMFILE: gemfiles/${{ matrix.gemfile }}.gemfile
