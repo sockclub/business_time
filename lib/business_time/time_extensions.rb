@@ -20,18 +20,30 @@ module BusinessTime
       # workday.
       # Note: It pretends that this day is a workday whether or not it really is a
       # workday.
+      # Altered from gem definition! Handles overnight work hours
       def end_of_workday(day)
-        end_of_workday = BusinessTime::Config.end_of_workday(day)
-        change_business_time(day,end_of_workday.hour,end_of_workday.min,end_of_workday.sec)
+        bod, eod = BusinessTime::Config.work_hours_for(day)
+
+        if eod < bod # Handle overnight work hours
+          day = day + 1.day
+        end
+
+        change_business_time(day, eod.hour, eod.min, eod.sec)
       end
 
       # Gives the time at the beginning of the workday, assuming that this time
       # falls on a workday.
       # Note: It pretends that this day is a workday whether or not it really is a
       # workday.
+      # Altered from gem definition! Handles overnight work hours
       def beginning_of_workday(day)
-        beginning_of_workday = BusinessTime::Config.beginning_of_workday(day)
-        change_business_time(day,beginning_of_workday.hour,beginning_of_workday.min,beginning_of_workday.sec)
+        bod, eod = BusinessTime::Config.work_hours_for(day)
+
+        if eod < bod # Handle overnight work hours
+          day = day - 1.day
+        end
+
+        change_business_time(day, bod.hour, bod.min, bod.sec)
       end
 
       # True if this time is on a workday (between 00:00:00 and 23:59:59), even if

@@ -26,8 +26,10 @@ module BusinessTime
         config[:end_of_workday] = ParsedTime.parse(time)
       end
 
+      # Altered from gem definition!
+      # now uses an indifferent hash to fix the wday logic in work_hours_for
       def work_hours=(work_hours)
-        work_hours.each_with_object(config[:work_hours] = {}) do |(day, hours), c|
+        work_hours.each_with_object(config[:work_hours] = {}.with_indifferent_access) do |(day, hours), c|
           c[day] = hours.map do |time|
             ParsedTime.parse(time)
           end
@@ -106,27 +108,38 @@ module BusinessTime
       # by saying
       #   BusinessTime::Config.end_of_workday = "5:30 pm"
       # someplace in the initializers of your application.
+      # Altered from gem definition!
+      # - introduced work_hours_for(day)
       def end_of_workday(day=nil)
-        eod = config[:end_of_workday]
-        if day
-          wday = work_hours[int_to_wday(day.wday)]
-          eod = wday.last if wday
-        end
-
-        eod == ParsedTime.new(0, 0) ? ParsedTime.new(23, 59, 59) : eod
+        work_hours_for(day).first
       end
 
       # You can set this yourself, either by the load method below, or
       # by saying
       #   BusinessTime::Config.beginning_of_workday = "8:30 am"
       # someplace in the initializers of your application.
+      # Altered from gem definition!
+      # - introduced work_hours_for(day)
       def beginning_of_workday(day=nil)
+        work_hours_for(day).last
+      end
+
+
+      # Custom method (not in source gem)
+      # Return [ beginning_of_workday, end_of_workday ] for the given day.
+      # Introduced for use in TimeExtensions to handle overnight work hours.
+      def work_hours_for(day)
+        eod = config[:end_of_workday]
         if day
           wday = work_hours[int_to_wday(day.wday)]
-          wday ? wday.first : config[:beginning_of_workday]
-        else
-          config[:beginning_of_workday]
+          eod = wday.last if wday
+          bod = wday.first if wday
         end
+
+        # Handle 00:00 closing times
+        eod == ParsedTime.new(0, 0) ? ParsedTime.new(23, 59, 59) : eod
+
+        return [eod, bod]
       end
 
       # You can set this yourself, either by the load method below, or
