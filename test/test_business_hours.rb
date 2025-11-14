@@ -199,24 +199,45 @@ describe "business hours" do
 
 
       it "respects hours going over midnight" do
-        before_midnight = Time.parse("2025-11-12 23:00")
-        after_midnight = Time.parse("2025-11-13 01:00")
-
-        BusinessTime::Config.work_hours = {
-          mon: ["17:00", "02:00"],
-          tue: ["17:00", "02:00"],
-          wed: ["17:00", "02:00"],
-          thu: ["17:00", "02:00"],
-          fri: ["17:00", "02:00"],
+        local_config = {
+          work_hours: {
+            mon: ["17:00", "02:00"],
+            tue: ["17:00", "02:00"],
+            wed: ["17:00", "02:00"],
+            thu: ["17:00", "02:00"],
+            fri: ["17:00", "02:00"],
+          }
         }
 
-        assert_equal after_midnight, 2.business_hours.after(before_midnight)
-        assert_equal before_midnight, 2.business_hours.before(after_midnight)
+        BusinessTime::Config.with(local_config) do
+          # Set up test within business hours that go over midnight
+          weds = Time.parse("2025-11-12 23:00")
+          weds_after_midnight = Time.parse("2025-11-13 01:00")
 
-        next_shift = Time.parse("2025-11-13 18:00")
+          assert_equal weds_after_midnight, 2.business_hours.after(weds)
+          assert_equal weds, 2.business_hours.before(weds_after_midnight)
 
-        assert_equal next_shift, 2.business_hours.after(after_midnight)
-        assert_equal after_midnight, 2.business_hours.before(next_shift)
+          # Test moving to next shift
+          thu_shift = Time.parse("2025-11-13 18:00")
+
+          assert_equal thu_shift, 2.business_hours.after(weds_after_midnight)
+          assert_equal weds_after_midnight, 2.business_hours.before(thu_shift)
+
+          assert_equal thu_shift, 4.business_hours.after(weds)
+          assert_equal weds, 4.business_hours.before(thu_shift)
+
+          # Test going over weekends
+          mon_shift = Time.parse("2025-11-17 18:00")
+
+          assert_equal mon_shift, 18.business_hours.after(thu_shift)
+          assert_equal thu_shift, 18.business_hours.before(mon_shift)
+
+          assert_equal mon_shift, 20.business_hours.after(weds_after_midnight)
+          assert_equal weds_after_midnight, 20.business_hours.before(mon_shift)
+
+          assert_equal mon_shift, 22.business_hours.after(weds)
+          assert_equal weds, 22.business_hours.before(mon_shift)
+        end
       end
     end
 

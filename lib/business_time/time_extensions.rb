@@ -5,40 +5,38 @@ module BusinessTime
     # holidays option allows you to pass in a different Array of holiday dates on
     # each call vs the BusinessTime::Config.holidays which is always static.
     def workday?(options={})
-      weekday? &&
-        !BusinessTime::Config.holidays.include?(to_date) &&
-        !to_array_of_dates(options[:holidays]).include?(to_date)
+      BusinessTime::Config.workday?(self, options)
     end
 
     # True if this time falls on a weekday.
     def weekday?
-      BusinessTime::Config.weekdays.include?(wday)
+      BusinessTime::Config.weekday?(wday)
     end
 
     module ClassMethods
-      def work_day_boundaries(day)
-        bod, eod = BusinessTime::Config.work_hours_for(day)
+      def work_day_boundaries(day, options={})
+        bod, eod = BusinessTime::Config.work_hours_for(day, options)
+        return [nil, nil] if bod.nil? || eod.nil?
 
-        # Standard hours where eod is after bod
-        if eod >= bod
-          return [
-            change_business_time(day, bod.hour, bod.min, bod.sec),
-            change_business_time(day, eod.hour, eod.min, eod.sec)
-          ]
+        eod_day = day
+        if eod < bod
+          eod_day += 1.day
         end
 
-        # Handle overnight work hours
-        if ParsedTime.parse(day) > eod
-          [
-            change_business_time(day, bod.hour, bod.min, bod.sec),
-            change_business_time(day + 1.day, eod.hour, eod.min, eod.sec)
-          ]
-        else
-          [
-            change_business_time(day - 1.day, bod.hour, bod.min, bod.sec),
-            change_business_time(day, eod.hour, eod.min, eod.sec)
-          ]
-        end
+        [
+          change_business_time(day, bod.hour, bod.min, bod.sec),
+          change_business_time(eod_day, eod.hour, eod.min, eod.sec)
+        ]
+      end
+
+
+      def end_of_previous_day(day, options={})
+        work_day_boundaries(previous_business_day(day - 1.day, options), options).last
+      end
+
+
+      def beginning_of_next_day(day, options={})
+        work_day_boundaries(first_business_day(day + 1.day, options), options).first
       end
 
 
@@ -84,19 +82,16 @@ module BusinessTime
       # Rolls forward to the next beginning_of_workday
       # when the time is outside of business hours
       def roll_forward(time, options={})
-        if Time.before_business_hours?(time) || !time.workday?(options)
-          next_business_time = Time.beginning_of_workday(time)
-        elsif Time.after_business_hours?(time) || Time.end_of_workday(time) == time
-          next_business_time = Time.beginning_of_workday(time + 1.day)
+        bod, eod = work_day_boundaries(time, options)
+
+        if eod.blank? || time >= eod
+          beginning_of_next_day(time, options)
+        # Account for overnight hours by checking the end of previous day
+        elsif time > bod || time <= end_of_previous_day(time, options)
+          return time.clone
         else
-          next_business_time = time.clone
+          bod
         end
-
-        while !next_business_time.workday?(options)
-          next_business_time = Time.beginning_of_workday(next_business_time + 1.day)
-        end
-
-        next_business_time
       end
 
       # Returns the time parameter itself if it is a business day
@@ -112,19 +107,18 @@ module BusinessTime
       # Rolls backwards to the previous end_of_workday when the time is outside
       # of business hours
       def roll_backward(time, options={})
-        prev_business_time = if (Time.before_business_hours?(time) || !time.workday?(options))
-                               Time.end_of_workday(time - 1.day)
-                             elsif Time.after_business_hours?(time)
-                               Time.end_of_workday(time)
-                             else
-                               time.clone
-                             end
+        bod, eod = work_day_boundaries(time, options)
+        eo_prev_day = end_of_previous_day(time, options)
+        return eo_prev_day if bod.blank?
 
-        while !prev_business_time.workday?(options)
-          prev_business_time = Time.end_of_workday(prev_business_time - 1.day)
+        # Account for overnight hours by checking the end of previous day
+        if time <= bod && time > eo_prev_day
+          eo_prev_day
+        elsif time >= eod
+          eod
+        else
+          time.clone
         end
-
-        prev_business_time
       end
 
       # Returns the time parameter itself if it is a business day
@@ -196,7 +190,17 @@ module BusinessTime
     end
 
     def during_business_hours?(options={})
-      self.workday?(options) && self.to_i.between?(Time.beginning_of_workday(self).to_i, Time.end_of_workday(self).to_i)
+      return false unless self.workday?(options)
+      compare = self.to_i
+
+      bod, eod = Time.work_day_boundaries(self, options)
+
+      return false if compare > eod.to_i
+      return true if compare >= bod.to_i
+
+      # Account for overnight work hours
+      eo_prev_day = Time.end_of_previous_day(self, options)
+      compare <= eo_prev_day.to_i
     end
 
     def consecutive_workdays(options={})
@@ -222,10 +226,6 @@ module BusinessTime
         date -= 1.day
       end
       (days << self).sort
-    end
-
-    def to_array_of_dates(values)
-      Array.wrap(values).map(&:to_date)
     end
   end
 end

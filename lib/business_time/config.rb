@@ -104,6 +104,23 @@ module BusinessTime
     threadsafe_cattr_accessor :fiscal_month_offset
 
     class << self
+      def weekday?(wday)
+        weekdays.include?(wday)
+      end
+
+
+      def holiday?(day, options={})
+        return false if day.nil?
+        holidays.include?(day.to_date) ||
+          to_array_of_dates(options[:holidays]).include?(day.to_date)
+      end
+
+
+      def workday?(time, options={})
+        weekday?(time.wday) && !holiday?(time, options)
+      end
+
+
       # You can set this yourself, either by the load method below, or
       # by saying
       #   BusinessTime::Config.end_of_workday = "5:30 pm"
@@ -128,16 +145,24 @@ module BusinessTime
       # Custom method (not in source gem)
       # Return [ beginning_of_workday, end_of_workday ] for the given day.
       # Introduced for use in TimeExtensions to handle overnight work hours.
-      def work_hours_for(day)
+      def work_hours_for(day, options={})
         # Default return non-day-specific work hours
-        eod = config[:end_of_workday]
-        bod = config[:beginning_of_workday]
+        if day.blank?
+          return [config[:beginning_of_workday], config[:end_of_workday]]
+        end
+
+        return [nil, nil] if !workday?(day, options)
+
+        if config[:work_hours].empty?
+          return [config[:beginning_of_workday], config[:end_of_workday]]
+        end
+
+        # todo probably regret
+        raise ArgumentError.new("day must be a Date or Time object if using work_hours configuration") if day && !day.respond_to?(:wday)
+
 
         # Override with day-specific work hours if given a day
-        if day
-          wday = work_hours[int_to_wday(day.wday)]
-          bod, eod = wday if wday
-        end
+        bod, eod = work_hours[int_to_wday(day.wday)]
 
         # Handle 00:00 closing times
         if eod == ParsedTime.new(0, 0)
@@ -226,6 +251,10 @@ module BusinessTime
 
       def deep_dup(object)
         Marshal.load(Marshal.dump(object))
+      end
+
+      def to_array_of_dates(values)
+        Array.wrap(values).map(&:to_date)
       end
     end
 
