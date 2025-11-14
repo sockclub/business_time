@@ -48,7 +48,7 @@ describe "config" do
       tue: [BusinessTime::ParsedTime.new(9),BusinessTime::ParsedTime.new(17)],
       thu: [BusinessTime::ParsedTime.new(9),BusinessTime::ParsedTime.new(17)],
       fri: [BusinessTime::ParsedTime.new(9),BusinessTime::ParsedTime.new(17)]
-    }, BusinessTime::Config.work_hours)
+    }.with_indifferent_access, BusinessTime::Config.work_hours)
     assert_equal([1,2,4,5], BusinessTime::Config.weekdays.sort)
   end
 
@@ -181,8 +181,8 @@ describe "config" do
     end
 
     it 'is threadsafe' do
-      old_hours = { fri: [BusinessTime::ParsedTime.new(10), BusinessTime::ParsedTime.new(12)] }
-      new_hours = { fri: [BusinessTime::ParsedTime.new(10), BusinessTime::ParsedTime.new(13)] }
+      old_hours = { fri: [BusinessTime::ParsedTime.new(10), BusinessTime::ParsedTime.new(12)] }.with_indifferent_access
+      new_hours = { fri: [BusinessTime::ParsedTime.new(10), BusinessTime::ParsedTime.new(13)] }.with_indifferent_access
       BusinessTime::Config.work_hours = old_hours
       t1 = Thread.new do
         sleep 0.1

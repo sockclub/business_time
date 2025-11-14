@@ -14,7 +14,7 @@ module BusinessTime
       end
       self.hours <=> other.hours
     end
-    
+
     def ago(options={})
       Time.zone ? before(Time.zone.now, options) : before(Time.now, options)
     end
@@ -40,52 +40,68 @@ module BusinessTime
 
     def calculate_after(time, hours, options={})
       after_time = Time.roll_forward(time, options)
+
       # Step through the hours, skipping over non-business hours
-      hours.times do
-        eod = Time.end_of_workday(after_time)
+      hours.times do |time|
+        bod, eod = Time.work_day_boundaries(after_time, options)
+        eo_prev_day = Time.end_of_previous_day(after_time, options)
+        bo_next_day = Time.beginning_of_next_day(after_time, options)
         after_time = after_time + 1.hour
 
-        # Ignore hours before opening and after closing
-        if after_time > eod
+        delta = 0
+        if bod.nil?
+          if after_time >= eo_prev_day
+            # rolled over midnight into non-business day
+            delta = after_time.min * 60 + after_time.sec
+            after_time = bo_next_day
+          end
+        elsif after_time > eod
           delta = after_time - eod
-
-          # Handle errors due to XX:59:59 exceptions
-          delta = 0 if delta == 1.second
-
-          after_time = Time.roll_forward(after_time, options) + delta
+          after_time = bo_next_day
+        elsif after_time < bod && after_time >= eo_prev_day
+          delta = after_time - eo_prev_day
+          after_time = bod
         end
 
-        # Ignore weekends and holidays
-        while !after_time.workday?
-          after_time = after_time + 1.day
-        end
+        delta = 0 if delta == 1.second
+        after_time = after_time + delta
       end
+
       after_time
     end
 
     def calculate_before(time, hours, options={})
-      before_time = Time.roll_backward(time)
+      before_time = Time.roll_backward(time, options)
       # Step through the hours, skipping over non-business hours
       hours.times do
-        bod = Time.beginning_of_workday(before_time)
+        bod, eod = Time.work_day_boundaries(before_time, options)
+        eo_prev_day = Time.end_of_previous_day(before_time, options)
         before_time = before_time - 1.hour
 
-        # Ignore hours before opening and after closing
-        if before_time <= bod
+        delta = 0
+        if bod.nil?
+          if before_time >= eo_prev_day
+            # rolled over midnight into non-business day
+            # delta is how much time past midnight we went
+            delta += (60 - before_time.min) * 60 if before_time.min > 0
+            delta += (60 - before_time.sec) if before_time.sec > 0
+
+            before_time = eo_prev_day
+          end
+        elsif before_time < bod && before_time > eo_prev_day
           delta = bod - before_time
-
-          # Due to the 23:59:59 end-of-workday exception
-          time_roll_backward = Time.roll_backward(before_time, options)
-          time_roll_backward += 1.second if time_roll_backward.iso8601 =~ /23:59:59/
-
-          before_time = time_roll_backward - delta
+          before_time = eo_prev_day
+        elsif before_time > eod
+          delta = before_time - eod
+          before_time = eod
         end
 
-        # Ignore weekends and holidays
-        while !before_time.workday?
-          before_time = before_time - 1.day
-        end
+        before_time = before_time - delta
+
+        # Due to the 23:59:59 end-of-workday exception
+        before_time += 1.second if before_time.iso8601 =~ /59:59/
       end
+
       before_time
     end
   end
